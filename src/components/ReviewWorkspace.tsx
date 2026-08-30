@@ -3,18 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Download } from "lucide-react";
-import {
-  attachAnswer,
-  detachAnswer,
-  exportCsv,
-  setFeedback,
-  setScore,
-} from "@/lib/review";
+import { attachAnswer, detachAnswer, exportCsv } from "@/lib/review";
 import { saveAnalysis } from "@/lib/storage";
-import type { AnalysisResult } from "@/lib/types";
+import type { AnalysisResult, Verdict } from "@/lib/types";
 import { AnswerSheetViewer } from "./AnswerSheetViewer";
-import { GradePanel } from "./GradePanel";
-import { QuestionList } from "./QuestionList";
+import { QuestionList, type QuestionFilter } from "./QuestionList";
 
 export function ReviewWorkspace({ result: initial }: { result: AnalysisResult }) {
   const [result, setResult] = useState<AnalysisResult>(() => ({
@@ -22,19 +15,25 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
     graded: initial.graded !== false,
     studentName: initial.studentName ?? null,
   }));
-  const firstId =
-    initial.items.find((item) => item.answer)?.question.id ?? initial.items[0]?.question.id ?? null;
-  const [selectedId, setSelectedId] = useState<string | null>(firstId);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedUnmappedId, setSelectedUnmappedId] = useState<string | null>(null);
   const [pane, setPane] = useState<"questions" | "sheet">("sheet");
+  const [filter, setFilter] = useState<QuestionFilter>("all");
 
   const selected = useMemo(
     () => result.items.find((item) => item.question.id === selectedId) ?? null,
     [result.items, selectedId]
   );
 
+  const visibleItems = useMemo(() => {
+    if (filter === "answered") return result.items.filter((item) => item.answer);
+    if (filter === "unanswered") return result.items.filter((item) => !item.answer);
+    return result.items;
+  }, [filter, result.items]);
+
   const answered = result.items.filter((item) => item.answer).length;
   const unanswered = result.items.length - answered;
+  const verdictCounts = useMemo(() => countVerdicts(result.items), [result.items]);
 
   function commit(next: AnalysisResult) {
     setResult(next);
@@ -47,23 +46,44 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
     setPane("sheet");
   }
 
+  function changeFilter(next: QuestionFilter) {
+    setFilter(next);
+    const pool =
+      next === "answered"
+        ? result.items.filter((item) => item.answer)
+        : next === "unanswered"
+          ? result.items.filter((item) => !item.answer)
+          : result.items;
+    if (selectedId && !pool.some((item) => item.question.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
-      const index = result.items.findIndex((item) => item.question.id === selectedId);
+      const index = visibleItems.findIndex((item) => item.question.id === selectedId);
       if (event.key === "j" || event.key === "J") {
-        const next = result.items[Math.min(result.items.length - 1, index + 1)];
+        if (index < 0) {
+          if (visibleItems[0]) selectQuestion(visibleItems[0].question.id);
+          return;
+        }
+        const next = visibleItems[Math.min(visibleItems.length - 1, index + 1)];
         if (next) selectQuestion(next.question.id);
       }
       if (event.key === "k" || event.key === "K") {
-        const prev = result.items[Math.max(0, index - 1)];
+        if (index < 0) {
+          if (visibleItems[0]) selectQuestion(visibleItems[0].question.id);
+          return;
+        }
+        const prev = visibleItems[Math.max(0, index - 1)];
         if (prev) selectQuestion(prev.question.id);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [result.items, selectedId]);
+  }, [visibleItems, selectedId]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -72,22 +92,25 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
           <ArrowLeft size={16} />
           New paper
         </Link>
-        <div className="flex min-w-0 items-baseline gap-3">
-          <p className="text-lg font-extrabold tracking-[-0.03em]">
-            {result.graded !== false ? (
-              <>
-                {result.awardedMarks}
-                <span className="text-sm font-semibold text-muted">/{result.totalMarks}</span>
-              </>
-            ) : (
-              <span className="text-sm font-semibold">Mapped only</span>
-            )}
-          </p>
-          <p className="truncate text-xs font-medium text-zinc-600">
-            {answered} answered · {unanswered} missing
+        <div className="min-w-0 text-center">
+          {result.graded !== false ? (
+            <p className="text-lg font-extrabold tracking-[-0.03em]">
+              {result.awardedMarks}
+              <span className="text-sm font-semibold text-muted">/{result.totalMarks}</span>
+            </p>
+          ) : (
+            <p className="text-sm font-semibold">Mapped only</p>
+          )}
+          <p className="truncate text-[11px] font-medium text-zinc-600">
+            {answered} answered · {unanswered} unanswered
             {result.unmappedAnswers.length ? ` · ${result.unmappedAnswers.length} extra` : ""}
-            {result.studentName ? ` · ${result.studentName}` : ""}
           </p>
+          {result.graded !== false && (
+            <p className="truncate text-[11px] text-zinc-500">
+              {verdictCounts.correct} correct · {verdictCounts.partial} partial · {verdictCounts.incorrect}{" "}
+              incorrect · {verdictCounts.unanswered} unanswered
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -95,25 +118,26 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
           className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold hover:bg-zinc-50"
         >
           <Download size={14} />
-          Export CSV
+          Export
         </button>
       </div>
 
       {result.overallFeedback && (
-        <p className="border-b border-line bg-[#faf9f7] px-4 py-2.5 text-[13px] leading-5 text-zinc-800 sm:px-5">
+        <p className="border-b border-line bg-[#faf9f7] px-4 py-2 text-[13px] leading-5 text-zinc-800 sm:px-5">
           {result.overallFeedback}
         </p>
       )}
 
       {result.unmappedAnswers.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-2 sm:px-5">
-          <span className="text-[11px] font-bold tracking-wide text-zinc-700 uppercase">Extra writing</span>
+          <span className="text-[11px] font-bold tracking-wide text-zinc-500 uppercase">Extra writing</span>
           {result.unmappedAnswers.map((answer, index) => (
             <button
               key={answer.id}
               type="button"
               onClick={() => {
                 setSelectedUnmappedId(answer.id);
+                setSelectedId(null);
                 setPane("sheet");
               }}
               className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
@@ -130,36 +154,21 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
         <PaneTab active={pane === "questions"} onClick={() => setPane("questions")}>
           Questions
         </PaneTab>
-        <PaneTab active={pane !== "questions"} onClick={() => setPane("sheet")}>
-          Mapping
+        <PaneTab active={pane === "sheet"} onClick={() => setPane("sheet")}>
+          Answer sheet
         </PaneTab>
       </div>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(240px,32%)_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_280px]">
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(280px,36%)_minmax(0,1fr)]">
         <section className={`min-h-0 ${pane === "questions" ? "block" : "hidden"} lg:block lg:border-r lg:border-line`}>
           <QuestionList
-            items={result.items}
+            items={visibleItems}
             selectedId={selectedId}
             onSelect={selectQuestion}
             graded={result.graded !== false}
-          />
-        </section>
-        <section className={`min-h-0 ${pane === "sheet" ? "block" : "hidden"} min-h-[50vh] lg:block`}>
-          <AnswerSheetViewer
-            pages={result.answerPages}
-            item={selected}
+            filter={filter}
+            onFilter={changeFilter}
             unmapped={result.unmappedAnswers}
-            selectedUnmappedId={selectedUnmappedId}
-            onSelectUnmapped={setSelectedUnmappedId}
-          />
-        </section>
-        <section className="hidden min-h-0 xl:block xl:border-l xl:border-line">
-          <GradePanel
-            item={selected}
-            graded={result.graded !== false}
-            unmapped={result.unmappedAnswers}
-            onScore={(score) => selected && commit(setScore(result, selected.question.id, score))}
-            onFeedback={(feedback) => selected && commit(setFeedback(result, selected.question.id, feedback))}
             onDetach={() => selected && commit(detachAnswer(result, selected.question.id))}
             onAttach={(answerId) => {
               if (!selected) return;
@@ -168,9 +177,27 @@ export function ReviewWorkspace({ result: initial }: { result: AnalysisResult })
             }}
           />
         </section>
+        <section className={`min-h-0 ${pane === "sheet" ? "block" : "hidden"} min-h-[50vh] lg:block`}>
+          <AnswerSheetViewer
+            pages={result.answerPages}
+            item={selected}
+            unmapped={result.unmappedAnswers}
+            selectedUnmappedId={selectedUnmappedId}
+            onSelectUnmapped={(id) => {
+              setSelectedUnmappedId(id);
+              setSelectedId(null);
+            }}
+          />
+        </section>
       </div>
     </div>
   );
+}
+
+function countVerdicts(items: AnalysisResult["items"]) {
+  const counts: Record<Verdict, number> = { correct: 0, partial: 0, incorrect: 0, unanswered: 0 };
+  for (const item of items) counts[item.verdict] += 1;
+  return counts;
 }
 
 function PaneTab({

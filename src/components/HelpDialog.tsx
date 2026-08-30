@@ -5,15 +5,15 @@ import { useState } from "react";
 const STEPS = [
   {
     title: "Upload both files",
-    body: "Question paper on the left, one handwritten script on the right. You’ll see a page thumbnail before mapping starts.",
+    body: "Question paper on the left, one handwritten script on the right. Then Start Mapping.",
   },
   {
     title: "Watch the four beats",
-    body: "We extract questions, find answer regions, map them (including out of order), then optionally score.",
+    body: "We extract questions, find answer regions, map them (including out of order), then score with feedback.",
   },
   {
     title: "Click a question, trust the box",
-    body: "The orange highlight is a number match. Amber dashed is a wording match. Grey dashed is extra writing you can attach yourself. J and K move between questions.",
+    body: "Green is fully correct, orange is partial, red is incorrect. A dashed box was matched by wording (out of order). Grey dashed is extra writing. Unanswered questions show no box.",
   },
 ];
 

@@ -22,8 +22,6 @@ export function UploadWorkspace() {
   const router = useRouter();
   const [question, setQuestion] = useState<SelectedFile | null>(null);
   const [answer, setAnswer] = useState<SelectedFile | null>(null);
-  const [studentName, setStudentName] = useState("");
-  const [skipGrading, setSkipGrading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Preparing files…");
   const [progress, setProgress] = useState(6);
@@ -82,8 +80,6 @@ export function UploadWorkspace() {
           answerFileName: answer.file.name,
           questionPages: question.pages,
           answerPages: answer.pages,
-          skipGrading,
-          studentName: studentName.trim() || null,
         },
         (event) => {
           setMessage(event.message);
@@ -114,14 +110,6 @@ export function UploadWorkspace() {
     return <ExtractingScreen message={message} progress={progress} stage={stage} stats={stats} />;
   }
 
-  const qPages = question?.pages?.length ?? 0;
-  const aPages = answer?.pages?.length ?? 0;
-  const buttonLabel = bothReady
-    ? `Start mapping (${qPages} + ${aPages} page${aPages + qPages === 1 ? "" : "s"})`
-    : question || answer
-      ? "Upload both files to continue"
-      : "Start Mapping";
-
   return (
     <div className="mx-auto flex w-full max-w-[760px] flex-col items-center px-4 py-8 sm:px-8 sm:py-12 lg:py-16">
       <PaperMark />
@@ -147,39 +135,19 @@ export function UploadWorkspace() {
         />
       </div>
 
-      <label className="mt-6 flex w-full max-w-sm flex-col gap-1.5 text-left">
-        <span className="text-xs font-medium text-muted">Student name (optional)</span>
-        <input
-          value={studentName}
-          onChange={(event) => setStudentName(event.target.value)}
-          placeholder="e.g. Aanya Sharma"
-          className="h-10 rounded-xl border border-line bg-white px-3 text-sm outline-none ring-orange/30 transition focus:ring-2"
-        />
-      </label>
-
-      <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-zinc-600">
-        <input
-          type="checkbox"
-          checked={skipGrading}
-          onChange={(event) => setSkipGrading(event.target.checked)}
-          className="accent-[#ff5c33]"
-        />
-        Map only — skip scoring
-      </label>
-
       <button
         type="button"
         disabled={!bothReady}
         onClick={startMapping}
-        className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-zinc-950 px-7 py-3 text-sm font-semibold text-white transition duration-200 enabled:hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d9d9d9]"
+        className="mt-10 inline-flex min-h-11 items-center gap-2 rounded-full bg-zinc-950 px-7 py-3 text-sm font-semibold text-white transition duration-200 enabled:hover:bg-black disabled:cursor-not-allowed disabled:bg-[#d9d9d9]"
       >
-        {buttonLabel}
+        Start Mapping
         <ArrowRight size={16} />
       </button>
       <p className="mt-3 max-w-sm text-center text-xs leading-5 text-muted">
         {bothReady
           ? "You’ll land on a split view: questions on the left, highlights on the sheet."
-          : "Once both files are ready, mapping can start."}
+          : "Upload both files to continue."}
       </p>
 
       {error && (
@@ -206,7 +174,7 @@ export function UploadWorkspace() {
         See a graded example
       </button>
       <p className="mt-1 max-w-xs text-center text-[11px] leading-4 text-muted">
-        Opens the split review with unanswered, out-of-order, and unmapped writing — no API call.
+        Unanswered, sub-parts, out-of-order, and extra writing — no API call.
       </p>
     </div>
   );

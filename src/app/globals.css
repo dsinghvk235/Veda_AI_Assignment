@@ -6,7 +6,7 @@
   --muted: #3f3f46;
   --line: #ececec;
   --orange: #ff5c33;
-  --canvas: #eef0f3;
+  --canvas: #efece7;
 }
 
 @theme inline {
@@ -105,7 +105,66 @@ body {
 
 .highlight-box {
   animation: highlight-pop 180ms cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 0 0 1px rgba(255, 92, 51, 0.22);
+  box-sizing: border-box;
+}
+
+.hl-correct {
+  border: 3px solid #16a34a;
+  background: rgba(22, 163, 74, 0.28);
+}
+
+.hl-partial {
+  border: 3px solid #ff5c33;
+  background: rgba(255, 92, 51, 0.28);
+}
+
+.hl-incorrect {
+  border: 3px solid #dc2626;
+  background: rgba(220, 38, 38, 0.24);
+}
+
+.hl-muted {
+  opacity: 0.45;
+}
+
+.hl-dashed {
+  border-style: dashed;
+}
+
+.hl-extra {
+  border: 2px dashed #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.hl-extra-on {
+  border: 2px dashed #64748b;
+  background: rgba(100, 116, 139, 0.2);
+}
+
+.hl-chip {
+  position: absolute;
+  top: -1.7rem;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.hl-chip-correct {
+  background: #16a34a;
+}
+
+.hl-chip-partial {
+  background: #ff5c33;
+}
+
+.hl-chip-incorrect {
+  background: #dc2626;
 }
 
 .no-scrollbar::-webkit-scrollbar {

@@ -1,6 +1,6 @@
 # VedaAI — Assessment Extraction & Answer Mapping
 
-Teacher tool for the VedaAI hiring assignment: upload a **question paper** and one **handwritten answer sheet**, extract questions, map answers (including out-of-order and unanswered), highlight the exact region on the sheet, and optionally grade with feedback.
+Teacher tool for the VedaAI hiring assignment: upload a **question paper** and one **handwritten answer sheet**, extract questions, map answers (including out-of-order and unanswered), highlight the exact region on the sheet, and grade with feedback.
 
 The UI follows the provided Figma **Extraction flow** (upload empty/filled, extracting, mapping).
 
@@ -24,9 +24,9 @@ React + Spring Boot would work, but it splits deploy, adds CORS/ops cost, and do
    - Then: semantic match for unlabeled leftovers.
    - Unanswered questions stay unanswered.
    - Extra writing that matches no question is kept as **unmapped**.
-4. **Grading / feedback** — marks, correct/partial/incorrect, per-question feedback, overall summary. Teachers can skip scoring and map only.
+4. **Grading / feedback** — marks, correct/partial/incorrect, per-question feedback, overall summary.
 
-Clicking a question highlights the mapped region(s). Multi-page answers show every region and jump to the first page. Teachers can attach/detach extra writing, edit marks and feedback locally, and export CSV — no extra model calls.
+Clicking a question highlights the mapped region(s). Multi-page answers show every region and jump to the first page. Fully correct regions are green, partial orange, incorrect red. Teachers can attach/detach extra writing and export CSV — no extra model calls.
 
 ## Run locally
 
@@ -50,6 +50,8 @@ Without a key you can still click **See a graded example** to walk the mapping i
 
 Hobby plans cap request bodies (~4.5 MB) and function time (60s). The app compresses pages and caps question-paper pages at 8 and answer-sheet pages at 12.
 
+Live: [https://veda-ai-assignment-ebon.vercel.app](https://veda-ai-assignment-ebon.vercel.app)
+
 ## Assumptions & limitations
 
 - One student script per run (as specified).
@@ -61,9 +63,8 @@ Hobby plans cap request bodies (~4.5 MB) and function time (60s). The app compre
 
 ## What reviewers should try
 
-- Upload both files → **Start mapping** → wait for Extracting…
-- Click questions on the left; confirm the orange overlay on the sheet. **J** / **K** move between questions.
-- An unanswered question shows no overlay and an Unanswered chip.
-- Optional: **Map only — skip scoring**.
-- Use **See a graded example** to see unanswered Q2, multi-page Q3, and an unmapped scribble without an API key.
+- Upload both files → **Start Mapping** → wait for Extracting…
+- Click questions on the left; the matching region on the sheet highlights. Green = correct, orange = partial, red = incorrect. **J** / **K** move between questions.
+- An unanswered question shows no overlay.
+- Use **See a graded example** to see sub-parts 11(a)/11(b), unanswered Q11(b), incorrect Q2 (red), out-of-order Q3 (orange, multi-page), and extra writing — no API key.
 - Open **My Library** to reopen a mapping from this browser session.

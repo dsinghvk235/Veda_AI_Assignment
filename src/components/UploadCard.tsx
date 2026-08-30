@@ -29,7 +29,6 @@ export function UploadCard({
 }) {
   const [over, setOver] = useState(false);
   const isPdf = value?.file.name.toLowerCase().endsWith(".pdf") || value?.file.type === "application/pdf";
-  const thumb = value?.pages?.[0];
   const filled = Boolean(value && !value.previewing && !value.error);
 
   return (
@@ -86,18 +85,9 @@ export function UploadCard({
             </>
           ) : (
             <>
-              {thumb ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`data:${thumb.mimeType};base64,${thumb.data}`}
-                  alt=""
-                  className="mb-3 h-16 w-12 rounded-md object-cover shadow-sm ring-1 ring-black/5"
-                />
-              ) : (
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange/10 text-orange">
-                  {isPdf ? <FileText size={22} /> : <FileImage size={22} />}
-                </div>
-              )}
+              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-orange/10 text-orange">
+                {isPdf ? <FileText size={22} /> : <FileImage size={22} />}
+              </div>
               <p className="max-w-[240px] truncate text-sm font-semibold">{value.file.name}</p>
               <p className="mt-1 text-xs text-muted">
                 {formatFileSize(value.file.size)}
